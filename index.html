@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Logbook BKN</title>
+<style>
+:root{--bg:#eef3f2;--ink:#12303a;--ac:#0b7a75;--mu:#5d7480;--ln:#cfdcd9;--wr:#c2410c;--cd:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,sans-serif;padding-bottom:70px}
+header{background:var(--ink);color:#fff;padding:14px 16px}header b{font-size:18px}header small{display:block;opacity:.7}
+main{max-width:720px;margin:auto;padding:12px}
+section{display:none}section.on{display:block}
+.c{background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px}
+h3{margin:0 0 8px;font-size:15px}label{display:block;font-size:13px;color:var(--mu);margin:8px 0 3px}
+input,textarea,select{width:100%;padding:9px;border:1px solid var(--ln);border-radius:6px;font:inherit;background:#fff}
+textarea{min-height:80px}
+button{font:inherit;border:1px solid var(--ac);background:#fff;color:var(--ac);border-radius:6px;padding:8px 12px}
+button.p{background:var(--ac);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{border-color:var(--ln);color:var(--ink);padding:6px 10px;font-size:13px}
+.chips button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mu{color:var(--mu);font-size:13px}.wr{color:var(--wr)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--ln)}
+nav button{flex:1;border:0;border-radius:0;padding:14px 0;color:var(--mu)}nav button.on{color:var(--ac);font-weight:700;box-shadow:inset 0 3px var(--ac)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:left;vertical-align:top}
+td input{width:62px;padding:4px}
+.bar{height:6px;background:var(--ln);border-radius:3px;margin-top:3px}.bar i{display:block;height:100%;background:var(--ac);border-radius:3px}
+#ed{position:fixed;inset:0;background:#000d;z-index:9;display:none;flex-direction:column;align-items:center;padding:10px;gap:8px;overflow:auto}
+#ed.on{display:flex}#cv{max-width:100%;touch-action:none;background:#fff}
+#msg{position:fixed;bottom:62px;left:10px;right:10px;background:var(--ink);color:#fff;padding:10px;border-radius:6px;display:none;z-index:10}
+#gs{font:12px/1.3 monospace;min-height:220px}
+</style></head><body>
+<header><b>Logbook Harian BKN</b><small>Perawat Ahli Pertama</small></header>
+<main>
+<section id="s1" class="on">
+ <div class="c"><label>Tanggal</label><input type="date" id="tg">
+ <label>Kegiatan hari ini (tanpa nama/identitas pasien)</label>
+ <textarea id="tx" placeholder="mis. rawat luka CDL"></textarea>
+ <div class="row" style="margin-top:8px"><button class="p" id="an">Analisis butir</button><button id="pk">+ Paket asuhan dasar</button></div></div>
+ <div class="c"><h3>Butir kegiatan</h3><div class="chips" id="bc"></div><div class="mu" id="why" style="margin-top:6px"></div>
+ <label>Kelolaan ke-</label><div class="chips" id="kc"></div></div>
+ <div class="c"><h3>Bukti dukung</h3><div id="ev" class="mu">Pilih butir dahulu.</div></div>
+ <button class="p" id="sv" style="width:100%;padding:12px">Simpan &amp; kirim</button>
+ <div class="mu" id="pend" style="margin-top:8px"></div>
+</section>
+<section id="s2"><div class="c"><div class="row"><b id="qt"></b><button id="pl" style="margin-left:auto">Tarik capaian dari spreadsheet</button></div>
+ <div class="mu" id="pri" style="margin:6px 0"></div><table id="tb"></table>
+ <p class="mu">Target default = 3 × target bulanan dari sheet Januari. Cek dan sesuaikan dengan sheet “Target pppk pw s1 HD”.</p></div></section>
+<section id="s3"><div class="c"><h3>Tautan</h3>
+ <label>Link spreadsheet (harus berformat Google Sheets)</label><input id="ss" placeholder="https://docs.google.com/spreadsheets/d/...">
+ <label>Link folder Google Drive</label><input id="fd" placeholder="https://drive.google.com/drive/folders/...">
+ <label>URL Web App Apps Script</label><input id="sc" placeholder="https://script.google.com/macros/s/.../exec">
+ <label>Kunci (sama dengan KUNCI di script)</label><input id="kn">
+ <div class="row" style="margin-top:8px"><button class="p" id="sd">Simpan</button><button id="ts">Tes koneksi</button></div></div>
+ <div class="c"><h3>Cara menyambungkan</h3><ol class="mu" style="padding-left:18px;margin:0">
+ <li>File Excel Anda saat ini tidak bisa ditulis otomatis. Buka di Drive → File → Simpan sebagai Google Sheets, lalu tempel link hasilnya di atas.</li>
+ <li>Buka script.google.com → Proyek baru → tempel kode di bawah, ganti KUNCI.</li>
+ <li>Deploy → Deployment baru → Aplikasi web; jalankan sebagai: Saya; akses: Siapa saja. Izinkan akses, salin URL ke kolom di atas.</li></ol>
+ <label>Kode Apps Script</label><textarea id="gs" readonly>const KUNCI='ganti-kunci';
+const NM={1:['JAN','JANUARI'],2:['FEB','FEBRUARI'],3:['MAR','MARET'],4:['APR','APRIL'],5:['MEI'],6:['JUN','JUNI'],7:['JUL','JULI'],8:['AGT','AGU','AGUSTUS'],9:['SEP','SEPT','SEPTEMBER'],10:['OKT','OKTOBER'],11:['NOV','NOVEMBER'],12:['DES','DESEMBER']};
+function out(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON)}
+function doGet(){return out({ok:true})}
+function doPost(e){try{const d=JSON.parse(e.postData.contents);
+ if(d.kunci!==KUNCI)return out({ok:false,error:'Kunci salah'});
+ if(d.aksi==='ping')return out({ok:true});
+ if(d.aksi==='foto')return out(foto(d));
+ const sh=cari(d);
+ if(d.aksi==='catat')return out(catat(sh,d));
+ if(d.aksi==='rekap')return out(rekap(sh));
+ return out({ok:false,error:'aksi tidak dikenal'})}catch(x){return out({ok:false,error:String(x)})}}
+function cari(d){const re=new RegExp('^('+NM[d.bulan].join('|')+')( ?(\\d{2}|\\d{4}))?$','i');
+ const s=SpreadsheetApp.openById(d.sheetId).getSheets().filter(s=>re.test(s.getName().trim()));
+ if(!s.length)throw new Error('Sheet bulan '+d.bulan+' tidak ditemukan');return s[0]}
+function baris(sh,hari){const n=sh.getLastRow();
+ const F=sh.getRange(1,6,n,1).getValues(),G=sh.getRange(1,7,n,1).getValues(),C=sh.getRange(1,3,n,1).getValues();
+ const t=[];for(let i=0;i<n;i++)if(/^TANGGAL/i.test(String(F[i][0]).trim()))t.push(i);
+ let i=t.find(j=>G[j][0] instanceof Date&&G[j][0].getDate()===hari);
+ if(i===undefined)i=t[hari-1];
+ if(i===undefined)throw new Error('Blok tanggal '+hari+' tidak ada');
+ for(let j=i;j<i+15&&j<n;j++)if(/pengkajian keperawatan lanjutan/i.test(C[j][0]))return j+1;
+ throw new Error('Baris butir 1 tidak ditemukan')}
+function catat(sh,d){const r=baris(sh,d.hari);
+ d.items.forEach(it=>sh.getRange(r+it.b-1,3+it.k).setValue(1));return{ok:true,n:d.items.length}}
+function rekap(sh){const n=sh.getLastRow();const M=sh.getRange(1,13,n,1).getValues();
+ for(let i=0;i<n;i++)if(/pengkajian keperawatan lanjutan/i.test(M[i][0])){
+  return{ok:true,v:sh.getRange(i+1,45,13,1).getValues().map(x=>Number(x[0])||0)}}
+ throw new Error('Tabel rekap tidak ditemukan')}
+function foto(d){const f=DriveApp.getFolderById(d.folderId);let nm=d.nama+'.jpg',k=2;
+ while(f.getFilesByName(nm).hasNext())nm=d.nama+' ('+(k++)+').jpg';
+ const file=f.createFile(Utilities.newBlob(Utilities.base64Decode(d.data),'image/jpeg',nm));
+ return{ok:true,nama:nm,url:file.getUrl()}}</textarea>
+ <button id="cp" style="margin-top:8px">Salin kode</button></div></section>
+</main>
+<div id="ed"><canvas id="cv"></canvas><div class="mu" style="color:#fff">Seret jari untuk menutup nama, no. RM, tgl lahir, alamat.</div>
+ <div class="row"><button id="un">Urungkan</button><button class="p" id="ok">Pakai foto</button><button id="cn">Batal</button></div></div>
+<div id="msg"></div>
+<nav><button class="on" data-t="s1">Input</button><button data-t="s2">Target</button><button data-t="s3">Data</button></nav>
+<script>
+const $=s=>document.querySelector(s),MON=['jan','feb','mar','apr','mei','jun','jul','agt','sep','okt','nov','des'];
+const B=['Pengkajian keperawatan lanjutan','Merumuskan diagnosa keperawatan','Prioritas diagnosa & masalah keperawatan','Menyusun rencana tindakan keperawatan','Komunikasi terapeutik','Perawatan luka','Pendidikan kesehatan pada pasien','Kenyamanan & pengaturan suhu tubuh','Oksigenisasi kompleks','Pemantauan kondisi pasien selama tindakan spesifik','Konsultasi & kolaborasi dengan dokter','Evaluasi tindakan keperawatan','Pendokumentasian tindakan keperawatan'];
+const R=[/kaji|anamnesa|pemeriksaan fisik|assessment|riwayat/,/diagnosa|diagnosis|masalah keperawatan/,/prioritas/,/rencana|intervensi|planning|perencanaan/,/komunikasi|terapeutik|menenangkan|empati/,/luka|dressing|balutan|ganti verban|dekubitus|ulkus|exit site|(rawat|perawatan|balut)\W+\w*\s*cdl|cdl.*(rawat|dressing|balut)/,/edukasi|penkes|pendidikan kesehatan|penyuluhan|diet|pembatasan cairan|idwg|leaflet/,/nyeri|nyaman|kompres|relaksasi|massage|kram|menggigil|demam|suhu|gatal|pruritus|distraksi|mual/,/oksigen|\bo2\b|nasal|nrm|sesak|saturasi|spo2|suction|nebul|ventilator|semi fowler/,/monitor|pantau|observasi|tanda vital|tekanan darah|\btd\b|\bhd\b|hemodialis|intradialisis|\buf\b|\bqb\b|hipotensi|priming|inisiasi|terminasi|kanulasi|cannulasi|punksi|av shunt|fistula|heparin|konek/,/dokter|dpjp|konsul|kolaborasi|advis|instruksi|visite|sbar|nefrolog|ahli gizi/,/evaluasi|soap|respon|tercapai/,/dokumentasi|catat|rekam medis|cppt|flowsheet|simrs|lembar hd/];
+let S;try{S=JSON.parse(localStorage.getItem('lb'))}catch(e){}
+S=S||{set:{tg:[120,120,120,120,120,60,3,30,15,120,15,120,120]},ent:[],ev:[],base:{}};
+const save=()=>{try{localStorage.setItem('lb',JSON.stringify(S))}catch(e){}};
+const sel=new Set(),kel=new Set(),pend={};let edB=0,rects=[],img=null,st=null;
+function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3500)}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,section').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#'+b.dataset.t).classList.add('on');if(b.dataset.t=='s2')rT()});
+$('#tg').value=new Date().toISOString().slice(0,10);
+function chips(){$('#bc').innerHTML=B.map((n,i)=>`<button data-b="${i+1}" class="${sel.has(i+1)?'on':''}" title="${n}">${i+1}. ${n.split(' ').slice(0,2).join(' ')}</button>`).join('');
+ $('#kc').innerHTML=[1,2,3,4,5].map(k=>`<button data-k="${k}" class="${kel.has(k)?'on':''}">${k}</button>`).join('');
+ $('#bc').querySelectorAll('button').forEach(b=>b.onclick=()=>{const n=+b.dataset.b;sel.has(n)?sel.delete(n):sel.add(n);chips();evs()});
+ $('#kc').querySelectorAll('button').forEach(b=>b.onclick=()=>{const n=+b.dataset.k;kel.has(n)?kel.delete(n):kel.add(n);chips()})}
+$('#an').onclick=()=>{const t=$('#tx').value.toLowerCase(),w=[];sel.clear();
+ R.forEach((r,i)=>{const m=t.match(r);if(m){sel.add(i+1);w.push(`butir ${i+1} ← “${m[0]}”`)}});
+ $('#why').textContent=w.length?w.join('; '):'Tidak ada yang cocok. Pilih butir secara manual.';chips();evs()};
+$('#pk').onclick=()=>{[1,2,3,4,5,10,12,13].forEach(b=>sel.add(b));chips();evs()};
+const nm=(b,d)=>{const x=new Date(d);return `bk ${b} ${MON[x.getMonth()]} ${x.getFullYear()}`};
+function evs(){const d=$('#tg').value;if(!sel.size){$('#ev').textContent='Pilih butir dahulu.';return}
+ $('#ev').innerHTML=[...sel].sort((a,b)=>a-b).map(b=>{const ym=d.slice(0,7),ada=S.ev.some(e=>e.ym==ym&&e.b==b);
+ return `<div style="margin-bottom:10px"><b>Butir ${b}</b> → <span class="mu">${nm(b,d)}</span><br><span class="mu">Anjuran: foto kegiatan (tanpa wajah pasien) atau screenshot rekam medis/CPPT. ${b==11?'Sertakan catatan advis dokter. ':''}Sensor nama, no. RM, tgl lahir, alamat.</span><br>
+ <label style="display:inline-block;border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:7px 10px;margin-top:4px">${pend[b]?'Ganti foto':'Pilih foto'}<input type="file" accept="image/*" hidden data-b="${b}"></label>
+ ${pend[b]?'<span style="color:var(--ac)"> ✓ siap diunggah</span>':ada?'<span class="mu"> bukti bulan ini sudah ada</span>':'<span class="wr"> belum ada bukti bulan ini</span>'}</div>`}).join('');
+ $('#ev').querySelectorAll('input').forEach(i=>i.onchange=()=>{if(i.files[0])openEd(+i.dataset.b,i.files[0])})}
+$('#tg').onchange=evs;
+function draw(){const c=$('#cv'),x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);x.fillStyle='#000';rects.forEach(r=>x.fillRect(...r))}
+function openEd(b,f){edB=b;img=new Image();img.onload=()=>{const s=Math.min(1,1400/Math.max(img.width,img.height)),c=$('#cv');c.width=img.width*s;c.height=img.height*s;rects=[];draw();$('#ed').classList.add('on')};img.src=URL.createObjectURL(f)}
+const cv=$('#cv'),pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+cv.onpointerdown=e=>{st=pt(e);cv.setPointerCapture(e.pointerId)};
+cv.onpointermove=e=>{if(!st)return;const p=pt(e);draw();const x=cv.getContext('2d');x.fillStyle='#000';x.fillRect(st[0],st[1],p[0]-st[0],p[1]-st[1])};
+cv.onpointerup=e=>{if(!st)return;const p=pt(e);if(Math.abs(p[0]-st[0])>6&&Math.abs(p[1]-st[1])>6)rects.push([st[0],st[1],p[0]-st[0],p[1]-st[1]]);st=null;draw()};
+$('#un').onclick=()=>{rects.pop();draw()};$('#cn').onclick=()=>$('#ed').classList.remove('on');
+$('#ok').onclick=()=>{pend[edB]=cv.toDataURL('image/jpeg',.85);$('#ed').classList.remove('on');evs()};
+async function post(aksi,d){const s=S.set;if(!s.script)throw new Error('Isi URL Web App di tab Data');
+ const r=await fetch(s.script,{method:'POST',body:JSON.stringify({...d,aksi,kunci:s.kunci||'',sheetId:(s.ss||'').match(/\/d\/([\w-]+)/)?.[1],folderId:(s.fd||'').match(/folders\/([\w-]+)/)?.[1]})});
+ const j=await r.json();if(!j.ok)throw new Error(j.error);return j}
+function cnt(mm,y,b,nb){const ym=y+'-'+String(mm+1).padStart(2,'0');return new Set(S.ent.filter(e=>e.d.startsWith(ym)&&e.b==b).map(e=>e.d+'|'+e.k)).size+(nb?0:(S.base[ym]||[])[b-1]||0)}
+function pnd(){const n=S.ent.filter(e=>!e.s).length;$('#pend').innerHTML=n?`${n} entri belum terkirim ke spreadsheet. <button id="rs">Kirim ulang</button>`:'';if(n)$('#rs').onclick=sync}
+async function sync(){let err=0;const days={};S.ent.filter(e=>!e.s).forEach(e=>(days[e.d]=days[e.d]||[]).push(e));
+ for(const d in days){try{const x=new Date(d);await post('catat',{bulan:x.getMonth()+1,tahun:x.getFullYear(),hari:x.getDate(),items:days[d].map(e=>({b:e.b,k:e.k}))});days[d].forEach(e=>e.s=1)}catch(e){err=e.message}}
+ for(const b in pend){const d=$('#tg').value;try{const j=await post('foto',{nama:nm(b,d),data:pend[b].split(',')[1]});S.ev.push({ym:d.slice(0,7),b:+b,nama:j.nama});delete pend[b]}catch(e){err=e.message}}
+ save();pnd();evs();toast(err?'Tersimpan di HP, belum terkirim: '+err:'Tercatat di spreadsheet & foto terunggah ✓')}
+$('#sv').onclick=()=>{const d=$('#tg').value;if(!d||!sel.size||!kel.size)return toast('Pilih tanggal, butir, dan kelolaan');
+ sel.forEach(b=>kel.forEach(k=>{if(!S.ent.some(e=>e.d==d&&e.b==b&&e.k==k))S.ent.push({d,b,k,s:0})}));save();sync()};
+function rT(){const n=new Date(),y=n.getFullYear(),m=n.getMonth(),q=m-m%3,left=q+3-m;$('#qt').textContent=`Triwulan ${MON[q]}–${MON[q+2]} ${y}`;
+ const ym=y+'-'+String(m+1).padStart(2,'0'),rows=B.map((t,i)=>{const b=i+1,c=cnt(m,y,b),tot=cnt(q,y,b)+cnt(q+1,y,b)+cnt(q+2,y,b),T=S.set.tg[i],mt=Math.max(0,Math.ceil((T-(tot-c))/left)),sisa=Math.max(0,mt-c);
+ return{b,t,c,tot,T,sisa,ev:S.ev.some(e=>e.ym==ym&&e.b==b)}});
+ const top=rows.filter(r=>r.sisa>0).sort((a,b)=>b.sisa-a.sisa).slice(0,3);
+ $('#pri').innerHTML=top.length?'Prioritas bulan ini: '+top.map(r=>`<b>butir ${r.b}</b> (kurang ${r.sisa})`).join(', '):'Semua butir sudah sesuai laju target bulan ini 👍';
+ $('#tb').innerHTML='<tr><th>Butir</th><th>Triwulan</th><th>Target</th><th>Bulan ini kurang</th></tr>'+rows.map(r=>`<tr><td><b>${r.b}</b> ${r.t}<br><span class="${r.ev?'mu':'wr'}">${r.ev?'bukti ✓':'bukti belum ada'}</span></td><td>${r.tot}<div class="bar"><i style="width:${Math.min(100,r.tot/r.T*100)}%"></i></div></td><td><input type="number" min="0" value="${r.T}" data-i="${r.b-1}"></td><td><b>${r.sisa}</b></td></tr>`).join('');
+ $('#tb').querySelectorAll('input').forEach(i=>i.onchange=()=>{S.set.tg[+i.dataset.i]=+i.value||0;save();rT()})}
+$('#pl').onclick=async()=>{const n=new Date(),y=n.getFullYear(),m=n.getMonth(),q=m-m%3;try{
+ for(let mm=q;mm<=m;mm++){const j=await post('rekap',{bulan:mm+1,tahun:y});S.base[y+'-'+String(mm+1).padStart(2,'0')]=j.v.map((v,i)=>Math.max(0,v-cnt(mm,y,i+1,1)))}
+ save();rT();toast('Capaian dari spreadsheet dimuat ✓')}catch(e){toast('Gagal: '+e.message)}};
+['ss','fd','sc','kn'].forEach((id,i)=>$('#'+id).value=S.set[['ss','fd','script','kunci'][i]]||'');
+$('#sd').onclick=()=>{S.set.ss=$('#ss').value.trim();S.set.fd=$('#fd').value.trim();S.set.script=$('#sc').value.trim();S.set.kunci=$('#kn').value.trim();save();toast('Tersimpan')};
+$('#ts').onclick=async()=>{$('#sd').click();try{await post('ping',{});toast('Terhubung ✓')}catch(e){toast('Gagal: '+e.message)}};
+$('#cp').onclick=()=>{$('#gs').select();navigator.clipboard?.writeText($('#gs').value);toast('Kode disalin')};
+chips();pnd();
+</script></body></html>
