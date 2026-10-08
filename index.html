@@ -36,7 +36,7 @@ td input{width:62px;padding:4px}
  <div class="row" style="margin-top:8px"><button class="p" id="an">Analisis butir</button><button id="pk">+ Paket asuhan dasar</button></div></div>
  <div class="c"><h3>Butir kegiatan</h3><div class="chips" id="bc"></div><div class="mu" id="why" style="margin-top:6px"></div>
  <label>Kelolaan ke-</label><div class="chips" id="kc"></div></div>
- <div class="c"><h3>Bukti dukung</h3><div id="ev" class="mu">Pilih butir dahulu.</div></div>
+ <div class="c"><h3>Bukti dukung</h3><input id="kt" placeholder="Keterangan di dokumen (opsional), mis. KIE cuci tangan 6 langkah" style="margin-bottom:8px"><div id="ev" class="mu">Pilih butir dahulu.</div></div>
  <button class="p" id="sv" style="width:100%;padding:12px">Simpan &amp; kirim</button>
  <div class="mu" id="pend" style="margin-top:8px"></div>
 </section>
@@ -48,6 +48,8 @@ td input{width:62px;padding:4px}
  <label>Link folder Google Drive</label><input id="fd" placeholder="https://drive.google.com/drive/folders/...">
  <label>URL Web App Apps Script</label><input id="sc" placeholder="https://script.google.com/macros/s/.../exec">
  <label>Kunci (sama dengan KUNCI di script)</label><input id="kn">
+ <label>Identitas untuk dokumen bukti dukung (tersimpan di HP ini saja)</label>
+ <input id="pn" placeholder="Nama lengkap + gelar"><input id="pi" placeholder="NIP" style="margin-top:6px"><input id="pg" placeholder="Pangkat/Gol, mis. III/B" style="margin-top:6px"><input id="pj" placeholder="Jabatan" style="margin-top:6px"><input id="pk" placeholder="Nama Kepala Ruang + gelar" style="margin-top:6px"><input id="pq" placeholder="NIP Kepala Ruang" style="margin-top:6px">
  <div class="row" style="margin-top:8px"><button class="p" id="sd">Simpan</button><button id="ts">Tes koneksi</button></div></div>
  <div class="c"><h3>Cara menyambungkan</h3><ol class="mu" style="padding-left:18px;margin:0">
  <li>File Excel Anda saat ini tidak bisa ditulis otomatis. Buka di Drive → File → Simpan sebagai Google Sheets, lalu tempel link hasilnya di atas.</li>
@@ -84,8 +86,24 @@ function rekap(sh){const n=sh.getLastRow();const M=sh.getRange(1,13,n,1).getValu
  throw new Error('Tabel rekap tidak ditemukan')}
 function foto(d){const f=DriveApp.getFolderById(d.folderId);let nm=d.nama+'.jpg',k=2;
  while(f.getFilesByName(nm).hasNext())nm=d.nama+' ('+(k++)+').jpg';
- const file=f.createFile(Utilities.newBlob(Utilities.base64Decode(d.data),'image/jpeg',nm));
- return{ok:true,nama:nm,url:file.getUrl()}}</textarea>
+ const bl=Utilities.newBlob(Utilities.base64Decode(d.data),'image/jpeg',nm),file=f.createFile(bl);let du='',de='';
+ try{du=dok(d,bl)}catch(x){de=String(x)}
+ return{ok:true,nama:nm,url:file.getUrl(),dok:du,dokError:de}}
+function dok(d,bl){const f=DriveApp.getFolderById(d.folderId),nm='BUKTI DUKUNG TW '+d.tw+' PERIODE SKP '+d.tahun,it=f.getFilesByName(nm);let doc;
+ if(it.hasNext())doc=DocumentApp.openById(it.next().getId());
+ else{doc=DocumentApp.create(nm);DriveApp.getFileById(doc.getId()).moveTo(f);
+  const b=doc.getBody(),p=d.profil||{},C=DocumentApp.HorizontalAlignment.CENTER;
+  b.appendParagraph('BUKTI DUKUNG TW '+d.tw).setAlignment(C).setBold(true);
+  b.appendParagraph('PERIODE SKP '+d.tahun).setAlignment(C).setBold(true);
+  [['NAMA',p.nama],['NIP',p.nip],['PANGKAT/ GOL',p.pangkat],['JABATAN',p.jabatan]].forEach(r=>b.appendParagraph(r[0]+' : '+(r[1]||'')));
+  const rows=[['NO.','BUTIR KEGIATAN','BUKTI DUKUNG']];d.semua.forEach((t,i)=>rows.push([(i+1)+'.',t,'']));
+  b.appendTable(rows);
+  b.appendParagraph('Mengetahui,');b.appendParagraph('Kepala Ruang');b.appendParagraph('');b.appendParagraph('');
+  b.appendParagraph(p.kepala||'').setBold(true);b.appendParagraph(p.nipkepala?'NIP. '+p.nipkepala:'')}
+ const t=doc.getBody().getTables()[0],c=t.getCell(d.b,2);
+ t.getCell(d.b,1).setText(d.semua[d.b-1]+(d.ket?' ('+d.ket+')':''));
+ c.clear();const im=c.appendImage(bl),w=im.getWidth(),h=im.getHeight();
+ im.setWidth(280).setHeight(h*280/w);doc.saveAndClose();return doc.getUrl()}</textarea>
  <button id="cp" style="margin-top:8px">Salin kode</button></div></section>
 </main>
 <div id="ed"><canvas id="cv"></canvas><div class="mu" style="color:#fff">Seret jari untuk menutup nama, no. RM, tgl lahir, alamat.</div>
@@ -115,9 +133,14 @@ const nm=(b,d)=>{const x=new Date(d);return `bk ${b} ${MON[x.getMonth()]} ${x.ge
 function evs(){const d=$('#tg').value;if(!sel.size){$('#ev').textContent='Pilih butir dahulu.';return}
  $('#ev').innerHTML=[...sel].sort((a,b)=>a-b).map(b=>{const ym=d.slice(0,7),ada=S.ev.some(e=>e.ym==ym&&e.b==b);
  return `<div style="margin-bottom:10px"><b>Butir ${b}</b> → <span class="mu">${nm(b,d)}</span><br><span class="mu">Anjuran: foto kegiatan (tanpa wajah pasien) atau screenshot rekam medis/CPPT. ${b==11?'Sertakan catatan advis dokter. ':''}Sensor nama, no. RM, tgl lahir, alamat.</span><br>
- <label style="display:inline-block;border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:7px 10px;margin-top:4px">${pend[b]?'Ganti foto':'Pilih foto'}<input type="file" accept="image/*" hidden data-b="${b}"></label>
+ <label style="display:inline-block;border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:7px 10px;margin-top:4px">${pend[b]?'Ganti foto':'Pilih foto'}<input type="file" accept="image/*" hidden data-b="${b}"></label> <button data-p="${b}" style="margin-top:4px">Tempel</button>
  ${pend[b]?'<span style="color:var(--ac)"> ✓ siap diunggah</span>':ada?'<span class="mu"> bukti bulan ini sudah ada</span>':'<span class="wr"> belum ada bukti bulan ini</span>'}</div>`}).join('');
- $('#ev').querySelectorAll('input').forEach(i=>i.onchange=()=>{if(i.files[0])openEd(+i.dataset.b,i.files[0])})}
+ $('#ev').querySelectorAll('input').forEach(i=>i.onchange=()=>{if(i.files[0]){act=+i.dataset.b;openEd(act,i.files[0])}});
+ $('#ev').querySelectorAll('[data-p]').forEach(x=>x.onclick=()=>tempel(+x.dataset.p))}
+let act=0;
+async function tempel(b){act=b;try{for(const i of await navigator.clipboard.read()){const t=i.types.find(x=>x.startsWith('image/'));if(t)return openEd(b,await i.getType(t))}toast('Tidak ada gambar di clipboard')}catch(e){toast('Gunakan Ctrl+V, atau izinkan akses clipboard')}}
+document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/'));if(!f)return;
+ const b=sel.size==1?[...sel][0]:sel.has(act)?act:0;if(!b)return toast('Ketuk Tempel pada butir tujuan, lalu Ctrl+V');e.preventDefault();act=b;openEd(b,f)});
 $('#tg').onchange=evs;
 function draw(){const c=$('#cv'),x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);x.fillStyle='#000';rects.forEach(r=>x.fillRect(...r))}
 function openEd(b,f){edB=b;img=new Image();img.onload=()=>{const s=Math.min(1,1400/Math.max(img.width,img.height)),c=$('#cv');c.width=img.width*s;c.height=img.height*s;rects=[];draw();$('#ed').classList.add('on')};img.src=URL.createObjectURL(f)}
@@ -132,10 +155,11 @@ async function post(aksi,d){const s=S.set;if(!s.script)throw new Error('Isi URL 
  const j=await r.json();if(!j.ok)throw new Error(j.error);return j}
 function cnt(mm,y,b,nb){const ym=y+'-'+String(mm+1).padStart(2,'0');return new Set(S.ent.filter(e=>e.d.startsWith(ym)&&e.b==b).map(e=>e.d+'|'+e.k)).size+(nb?0:(S.base[ym]||[])[b-1]||0)}
 function pnd(){const n=S.ent.filter(e=>!e.s).length;$('#pend').innerHTML=n?`${n} entri belum terkirim ke spreadsheet. <button id="rs">Kirim ulang</button>`:'';if(n)$('#rs').onclick=sync}
-async function sync(){let err=0;const days={};S.ent.filter(e=>!e.s).forEach(e=>(days[e.d]=days[e.d]||[]).push(e));
+async function sync(){let err=0,w='';const days={};S.ent.filter(e=>!e.s).forEach(e=>(days[e.d]=days[e.d]||[]).push(e));
  for(const d in days){try{const x=new Date(d);await post('catat',{bulan:x.getMonth()+1,tahun:x.getFullYear(),hari:x.getDate(),items:days[d].map(e=>({b:e.b,k:e.k}))});days[d].forEach(e=>e.s=1)}catch(e){err=e.message}}
- for(const b in pend){const d=$('#tg').value;try{const j=await post('foto',{nama:nm(b,d),data:pend[b].split(',')[1]});S.ev.push({ym:d.slice(0,7),b:+b,nama:j.nama});delete pend[b]}catch(e){err=e.message}}
- save();pnd();evs();toast(err?'Tersimpan di HP, belum terkirim: '+err:'Tercatat di spreadsheet & foto terunggah ✓')}
+ for(const b in pend){const d=$('#tg').value;try{const x=new Date(d),j=await post('foto',{nama:nm(b,d),data:pend[b].split(',')[1],b:+b,tw:Math.floor(x.getMonth()/3)+1,tahun:x.getFullYear(),profil:S.set.pr||{},semua:B,ket:$('#kt').value.trim()});S.ev.push({ym:d.slice(0,7),b:+b,nama:j.nama});delete pend[b];if(j.dokError)w='Foto terunggah, tapi Google Doc gagal: '+j.dokError}catch(e){err=e.message}}
+ $('#kt').value='';
+ save();pnd();evs();toast(err?'Tersimpan di HP, belum terkirim: '+err:w||'Tercatat di spreadsheet, foto terunggah & Google Doc terisi ✓')}
 $('#sv').onclick=()=>{const d=$('#tg').value;if(!d||!sel.size||!kel.size)return toast('Pilih tanggal, butir, dan kelolaan');
  sel.forEach(b=>kel.forEach(k=>{if(!S.ent.some(e=>e.d==d&&e.b==b&&e.k==k))S.ent.push({d,b,k,s:0})}));save();sync()};
 function rT(){const n=new Date(),y=n.getFullYear(),m=n.getMonth(),q=m-m%3,left=q+3-m;$('#qt').textContent=`Triwulan ${MON[q]}–${MON[q+2]} ${y}`;
@@ -149,8 +173,10 @@ $('#pl').onclick=async()=>{const n=new Date(),y=n.getFullYear(),m=n.getMonth(),q
  for(let mm=q;mm<=m;mm++){const j=await post('rekap',{bulan:mm+1,tahun:y});S.base[y+'-'+String(mm+1).padStart(2,'0')]=j.v.map((v,i)=>Math.max(0,v-cnt(mm,y,i+1,1)))}
  save();rT();toast('Capaian dari spreadsheet dimuat ✓')}catch(e){toast('Gagal: '+e.message)}};
 ['ss','fd','sc','kn'].forEach((id,i)=>$('#'+id).value=S.set[['ss','fd','script','kunci'][i]]||'');
-$('#sd').onclick=()=>{S.set.ss=$('#ss').value.trim();S.set.fd=$('#fd').value.trim();S.set.script=$('#sc').value.trim();S.set.kunci=$('#kn').value.trim();save();toast('Tersimpan')};
+$('#sd').onclick=()=>{S.set.ss=$('#ss').value.trim();S.set.fd=$('#fd').value.trim();S.set.script=$('#sc').value.trim();S.set.kunci=$('#kn').value.trim();S.set.pr={};PR.forEach(([id,k])=>S.set.pr[k]=$('#'+id).value.trim());save();toast('Tersimpan')};
 $('#ts').onclick=async()=>{$('#sd').click();try{await post('ping',{});toast('Terhubung ✓')}catch(e){toast('Gagal: '+e.message)}};
 $('#cp').onclick=()=>{$('#gs').select();navigator.clipboard?.writeText($('#gs').value);toast('Kode disalin')};
+const PR=[['pn','nama'],['pi','nip'],['pg','pangkat'],['pj','jabatan'],['pk','kepala'],['pq','nipkepala']];
+PR.forEach(([id,k])=>$('#'+id).value=(S.set.pr||{})[k]||'');
 chips();pnd();
 </script></body></html>
